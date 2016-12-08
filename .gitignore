@@ -1,0 +1,6 @@
+.vs/
+/Debug/*
+!/Debug/glut32.dll
+The Maze.sdf
+**/.DS_Store
+**.log
