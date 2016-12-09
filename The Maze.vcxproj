@@ -84,11 +84,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GLTexture.cpp" />
+    <ClCompile Include="Maze.cpp" />
     <ClCompile Include="Model_3DS.cpp" />
-    <ClCompile Include="The Maze.cpp" />
+    <ClCompile Include="Game.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GLTexture.h" />
+    <ClInclude Include="Maze.h" />
     <ClInclude Include="Model_3DS.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

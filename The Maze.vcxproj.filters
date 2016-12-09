@@ -7,7 +7,10 @@
     <ClCompile Include="Model_3DS.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="The Maze.cpp">
+    <ClCompile Include="Maze.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -16,6 +19,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Model_3DS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Maze.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
