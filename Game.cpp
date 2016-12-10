@@ -1,364 +1,438 @@
+#include <string>
+#include <time.h>
+
 #include "TextureBuilder.h"
-#include "Model_3DS.h"
-#include "GLTexture.h"
-#include <glut.h>
+#include "mazeWall.h"
+#include "glut.h" 
+#include <math.h>
+#include <stdlib.h>
+#include <sstream>
+#include "Maze.h"
+#include "Ball.h"
+
 #pragma comment(lib, "legacy_stdio_definitions.lib")
 
-int WIDTH = 1280;
-int HEIGHT = 720;
+#define GLUT_KEY_ESCAPE 27
+#define DEG2RAD(a) (a * 0.0174532925)
 
-GLuint tex;
-char title[] = "3D Model Loader Sample";
+Ball ball;
+double WidthX = glutGet(GLUT_SCREEN_WIDTH);
+double HeightY = glutGet(GLUT_SCREEN_HEIGHT);
+bool isEasy = false, isMedium = false, isHard = false, game_start = false;
+double arrowX = WidthX / 2 - 360, arrowY = HeightY / 2 + 100, level = 3; // level 3 means that this level does not exist 
+GLuint texID;
+double ratio = WidthX / HeightY;
+//maze 
+bool ** maze;
+int n = 3;
 
-// 3D Projection Options
-GLdouble fovy = 45.0;
-GLdouble aspectRatio = (GLdouble)WIDTH / (GLdouble)HEIGHT;
-GLdouble zNear = 0.1;
-GLdouble zFar = 100;
 
-class Vector
-{
+
+class Vector3f {
 public:
-	GLdouble x, y, z;
-	Vector() {}
-	Vector(GLdouble _x, GLdouble _y, GLdouble _z) : x(_x), y(_y), z(_z) {}
-	//================================================================================================//
-	// Operator Overloading; In C++ you can override the behavior of operators for you class objects. //
-	// Here we are overloading the += operator to add a given value to all vector coordinates.        //
-	//================================================================================================//
-	void operator +=(float value)
-	{
-		x += value;
-		y += value;
-		z += value;
+	float x, y, z;
+
+	Vector3f(float _x = 0.0f, float _y = 0.0f, float _z = 0.0f) {
+		x = _x;
+		y = _y;
+		z = _z;
+	}
+
+	Vector3f operator+(Vector3f &v) {
+		return Vector3f(x + v.x, y + v.y, z + v.z);
+	}
+
+	Vector3f operator-(Vector3f &v) {
+		return Vector3f(x - v.x, y - v.y, z - v.z);
+	}
+
+	Vector3f operator*(float n) {
+		return Vector3f(x * n, y * n, z * n);
+	}
+
+	Vector3f operator/(float n) {
+		return Vector3f(x / n, y / n, z / n);
+	}
+
+	Vector3f unit() {
+		return *this / sqrt(x * x + y * y + z * z);
+	}
+
+	Vector3f cross(Vector3f v) {
+		return Vector3f(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
 	}
 };
 
-Vector Eye(20, 5, 20);
-Vector At(0, 0, 0);
-Vector Up(0, 1, 0);
+class Camera {
+public:
+	Vector3f eye, center, up;
 
-int cameraZoom = 0;
+	Camera(float eyeX = -20.0f, float eyeY = 25.0f, float eyeZ = 20, float centerX = 20, float centerY = 0.0f, float centerZ = 20, float upX = 0.0f, float upY = 1.0f, float upZ = 0.0f) {
+		eye = Vector3f(eyeX, eyeY, eyeZ);
+		center = Vector3f(centerX, centerY, centerZ);
+		up = Vector3f(upX, upY, upZ);
+	}
 
-// Model Variables
-Model_3DS model_house;
-Model_3DS model_tree;
+	void moveX(float d) {
+		Vector3f right = up.cross(center - eye).unit();
+		eye = eye + right * d;
+		center = center + right * d;
+	}
 
-// Textures
-GLTexture tex_ground;
+	void moveY(float d) {
+		eye = eye + up.unit() * d;
+		center = center + up.unit() * d;
+	}
 
-//=======================================================================
-// Lighting Configuration Function
-//=======================================================================
-void InitLightSource()
-{
-	// Enable Lighting for this OpenGL Program
-	glEnable(GL_LIGHTING);
+	void moveZ(float d) {
+		Vector3f view = (center - eye).unit();
+		eye = eye + view * d;
+		center = center + view * d;
+	}
 
-	// Enable Light Source number 0
-	// OpengL has 8 light sources
-	glEnable(GL_LIGHT0);
+	void rotateX(float a) {
+		Vector3f view = (center - eye).unit();
+		Vector3f right = up.cross(view).unit();
+		view = view * cos(DEG2RAD(a)) + up * sin(DEG2RAD(a));
+		up = view.cross(right);
+		center = eye + view;
+	}
 
-	// Define Light source 0 ambient light
-	GLfloat ambient[] = { 0.1f, 0.1f, 0.1, 1.0f };
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+	void rotateY(float a) {
+		Vector3f view = (center - eye).unit();
+		Vector3f right = up.cross(view).unit();
+		view = view * cos(DEG2RAD(a)) + right * sin(DEG2RAD(a));
+		right = view.cross(up);
+		center = eye + view;
+	}
 
-	// Define Light source 0 diffuse light
-	GLfloat diffuse[] = { 0.5f, 0.5f, 0.5f, 1.0f };
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+	void look() {
+		gluLookAt(
+			eye.x, eye.y, eye.z,
+			center.x, center.y, center.z,
+			up.x, up.y, up.z
+		);
+	}
+};
 
-	// Define Light source 0 Specular light
-	GLfloat specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-
-	// Finally, define light source 0 position in World Space
-	GLfloat light_position[] = { 0.0f, 10.0f, 0.0f, 1.0f };
-	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-}
-
-//=======================================================================
-// Material Configuration Function
-//======================================================================
-void InitMaterial()
-{
-	// Enable Material Tracking
-	glEnable(GL_COLOR_MATERIAL);
-
-	// Sich will be assigneet Material Properties whd by glColor
-	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-
-	// Set Material's Specular Color
-	// Will be applied to all objects
-	GLfloat specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-
-	// Set Material's Shine value (0->128)
-	GLfloat shininess[] = { 96.0f };
-	glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
-}
-
-//=======================================================================
-// OpengGL Configuration Function
-//=======================================================================
-void myInit(void)
-{
-	glClearColor(0.0, 0.0, 0.0, 0.0);
-
+Camera camera;
+/*
+void setupCamera() {
 	glMatrixMode(GL_PROJECTION);
-
 	glLoadIdentity();
-
-	gluPerspective(fovy, aspectRatio, zNear, zFar);
-	//*******************************************************************************************//
-	// fovy:			Angle between the bottom and top of the projectors, in degrees.			 //
-	// aspectRatio:		Ratio of width to height of the clipping plane.							 //
-	// zNear and zFar:	Specify the front and back clipping planes distances from camera.		 //
-	//*******************************************************************************************//
+	gluPerspective(90, 16 / 9, 0.001, 300);
 
 	glMatrixMode(GL_MODELVIEW);
-
 	glLoadIdentity();
-
-	gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
-	//*******************************************************************************************//
-	// EYE (ex, ey, ez): defines the location of the camera.									 //
-	// AT (ax, ay, az):	 denotes the direction where the camera is aiming at.					 //
-	// UP (ux, uy, uz):  denotes the upward orientation of the camera.							 //
-	//*******************************************************************************************//
-
-	InitLightSource();
-
-	InitMaterial();
-
-	glEnable(GL_DEPTH_TEST);
-
-	glEnable(GL_NORMALIZE);
+	camera.look();
 }
 
-//=======================================================================
-// Render Ground Function
-//=======================================================================
-void RenderGround()
+void setupLights() {
+	//light config
+	GLfloat ambient[] = { 0.1f, 0.1f, 0.1, 1.0f };
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+	GLfloat diffuse[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+	GLfloat specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+	GLfloat light_position[] = { 0.5*n*wallLength, 10.0f, 0.5*n*wallLength, 1.0f };
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+	GLfloat lightIntensity[] = { 0.5, 0.5, 0.5, 1.0f };
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
+
+	//material config
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+	GLfloat material_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glMaterialfv(GL_FRONT, GL_SPECULAR, material_specular);
+	GLfloat material_shininess[] = { 96.0f };
+	glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
+
+}*/
+void init()
 {
-	glDisable(GL_LIGHTING);	// Disable lighting 
+	//3D stuff 
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_COLOR_MATERIAL);
+	glShadeModel(GL_SMOOTH);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_NORMALIZE);	
+}
 
-	glColor3f(0.6, 0.6, 0.6);	// Dim the ground texture a bit
 
-	glEnable(GL_TEXTURE_2D);	// Enable 2D texturing
-
-	glBindTexture(GL_TEXTURE_2D, tex_ground.texture[0]);	// Bind the ground texture
-
+void drawCord() {
 	glPushMatrix();
-	glBegin(GL_QUADS);
-	glNormal3f(0, 1, 0);	// Set quad normal direction.
-	glTexCoord2f(0, 0);		// Set tex coordinates ( Using (0,0) -> (5,5) with texture wrapping set to GL_REPEAT to simulate the ground repeated grass texture).
-	glVertex3f(-20, 0, -20);
-	glTexCoord2f(5, 0);
-	glVertex3f(20, 0, -20);
-	glTexCoord2f(5, 5);
-	glVertex3f(20, 0, 20);
-	glTexCoord2f(0, 5);
-	glVertex3f(-20, 0, 20);
+	glColor3f(1, 0, 0); //z
+	glBegin(GL_LINES);
+	glVertex3d(0, 0, 0);
+	glVertex3d(0, 0, 0.5 * 90);
+	glEnd();
+
+	glBegin(GL_LINES);
+	glColor3f(0, 0, 1); // y
+	glVertex3d(0, 0, 0);
+	glVertex3d(0, 0.5 * 30, 0);
+	glEnd();
+
+	glBegin(GL_LINES);
+	glColor3f(0, 1, 0); //x
+	glVertex3d(0, 0, 0);
+	glVertex3d(0.5 * 30, 0, 0);
+	glEnd();
+	glPopMatrix();
+}
+std::string parse(int x) {
+	std::ostringstream buffer;
+	buffer << x;
+	return buffer.str();
+}
+void printString(double x, double y, double z, double r, double g, double b, std::string s) {
+
+	glColor3f(r, g, b);
+	glRasterPos3f(x, y, z);
+
+	for (unsigned int i = 0; i < s.length(); i++)
+		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, s[i]);
+
+}
+void drawArrow() {
+	glPushMatrix();
+	glTranslated(arrowX, arrowY, 0);
+	glRotated(-90, 0, 0, 1);
+	glPushMatrix();
+	glScaled(0.3, 0.3, 1);
+	glBegin(GL_TRIANGLES);
+	glColor3f(1.0f, 0.0f, 0.0f); //red
+	glVertex3f(150.0f, 200.0f, 0.0f);
+	glColor3f(0.0f, 1.0f, 0.0f);//green
+	glVertex3f(100.0f, 100.0f, 0.0f);
+	glColor3f(0.0f, 0.0f, 1.0f);//blue
+	glVertex3f(200.0f, 100.0f, 0.0f);
 	glEnd();
 	glPopMatrix();
 
-	glEnable(GL_LIGHTING);	// Enable lighting again for other entites coming throung the pipeline.
+	glPushMatrix();
+	glTranslated(30, 15, 0);
+	glBegin(GL_QUADS);
+	glColor3f(0.0f, 0.0f, 1.0f);//blue
+	glVertex3f(10.0f, 10.0f, 0.0f);
+	glVertex3f(10.0f, 20.0f, 0.0f);
+	glVertex3f(20.0f, 20.0f, 0.0f);
+	glVertex3f(20.0f, 10.0f, 0.0f);
+	glEnd();
+	glPopMatrix();
 
-	glColor3f(1, 1, 1);	// Set material back to white instead of grey used for the ground texture.
+	glPopMatrix();
 }
 
-//=======================================================================
-// Display Function
-//=======================================================================
-void myDisplay(void)
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-
-	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
-	GLfloat lightPosition[] = {0.0f, 100.0f, 0.0f, 0.0f };
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
-
-	// Draw Ground
-	RenderGround();
-
-	// Draw Tree Model
-	glPushMatrix();
-	glTranslatef(10, 0, 0);
-	glScalef(0.7, 0.7, 0.7);
-	model_tree.Draw();
-	glPopMatrix();
-
-	// Draw house Model
-	glPushMatrix();
-	glRotatef(90.f, 1, 0, 0);
-	model_house.Draw();
-	glPopMatrix();
-
-
-//sky box
-	glPushMatrix();
-
-	GLUquadricObj * qobj;
-	qobj = gluNewQuadric();
-	glTranslated(50,0,0);
-	glRotated(90,1,0,1);
-	glBindTexture(GL_TEXTURE_2D, tex);
-	gluQuadricTexture(qobj,true);
-	gluQuadricNormals(qobj,GL_SMOOTH);
-	gluSphere(qobj,100,100,100);
-	gluDeleteQuadric(qobj);
+void display(void) {
 	
-	glPopMatrix();
+	if (!game_start) {
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glPushMatrix();
+		glColor3f(0.10f, 0.20f, 0.10f);
+		glBindTexture(GL_TEXTURE_2D, texID); //enabling the texture again  
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f); glVertex3f(0, 0, 0);
+		glTexCoord2f(1, 0.0f); glVertex3f(WidthX + 100, 0, 0);
+		glTexCoord2f(1, 1); glVertex3f(WidthX + 600, HeightY, 0);
+		glTexCoord2f(0.0f, 1); glVertex3f(0, HeightY + 600, 0);
+		glEnd();
+		glBindTexture(GL_TEXTURE_2D, NULL);    //disabling the texture again  
+		glPopMatrix();
+
+		std::string s = " Choose The Maze Mode :";
+		printString(WidthX / 2 - 360, HeightY / 2 + 100, 0, 1, 0, 0, s);
+		std::string t = " Easy ";
+		printString(WidthX / 2 - 300, HeightY / 2 + 50, 0, 1, 0, 0, t);
+		std::string o = " Medium  ";
+		printString(WidthX / 2 - 300, HeightY / 2, 0, 1, 0, 0, o);
+		std::string d = " Hard ";
+		printString(WidthX / 2 - 300, HeightY / 2 - 50, 0, 1, 0, 0, d);
+
+		std::string r = "  ESC : Exit  ";
+		printString(WidthX / 2 - 750, HeightY / 2 - 400, 0, 1, 0, 0, r);
+
+		std::string e = " press  --> : Enter  ";
+		printString(WidthX / 2 - 600, HeightY / 2 - 400, 0, 1, 0, 0, e);
+
+		drawArrow();
+
+	}
+	else {
 	
-	
-	
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		setupCamera();
+		glBindTexture(GL_TEXTURE_2D, NULL); //no texture by default: if you want to use it activate it then disable it again  
+
+		drawCord();
+		// test of calls 		
+		drawMaze(maze, n);
+		//createMazeSingleWall (0,0,0, true  ) ;
+		//createMazeSingleWall (0,0,0, false  ) ;
+
+		ball.drawBall(wallLength / 2, wallLength, wallLength / 2); //this line draw the ball at <x,y,z> but when it does , the light goes
+
+	}
+	glFlush();
 	glutSwapBuffers();
 }
 
-//=======================================================================
-// Keyboard Function
-//=======================================================================
-void myKeyboard(unsigned char button, int x, int y)
-{
-	switch (button)
-	{
-	case 'w':
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		break;
-	case 'r':
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		break;
-	case 27:
-		exit(0);
-		break;
-	default:
-		break;
+void Anim_Move() {
+	if (arrowX == WidthX / 2 - 360 && arrowY == HeightY / 2 + 100) {
+		isEasy = true;
+		isHard = false;
+		level = 0;
+		//printf("iseasy flag:",isEasy);
+		//printf("ismedium flag:",isMedium);
+		//printf("ishard flag:",isHard);
 	}
+	else if (arrowX == WidthX / 2 - 360 && arrowY == HeightY / 2 + 50) {
+		isMedium = true;
+		isEasy = false;
+		level = 1;
+		//	printf("iseasy flag:",isEasy);
+		//	printf("ismedium flag:",isMedium);
+		//	printf("ishard flag:",isHard);
+	}
+	else if (arrowX == WidthX / 2 - 360 && arrowY == HeightY / 2) {
+		isHard = true;
+		isMedium = false;
+		level = 2;
+		/*printf("iseasy flag:",isEasy);
+		printf("ismedium flag:",isMedium);
+		printf("ishard flag:",isHard);*/
+	}//else isHard=false;
 
 	glutPostRedisplay();
 }
 
-//=======================================================================
-// Motion Function
-//=======================================================================
-void myMotion(int x, int y)
-{
-	y = HEIGHT - y;
 
-	if (cameraZoom - y > 0)
-	{
-		Eye.x += -0.1;
-		Eye.z += -0.1;
-	}
-	else
-	{
-		Eye.x += 0.1;
-		Eye.z += 0.1;
-	}
+void Keyboard(unsigned char key, int x, int y) {
+	float d = 1;
 
-	cameraZoom = y;
+	switch (key) {
+	case 'w':
+		camera.moveY(d);
+		glutPostRedisplay();
 
-	glLoadIdentity();	//Clear Model_View Matrix
+		break;
+	case 's':
+		camera.moveY(-d);
+		glutPostRedisplay();
 
-	gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);	//Setup Camera with modified paramters
+		break;
+	case 'a':
+		camera.moveX(d);
+		glutPostRedisplay();
+		break;
+	case 'd':
+		camera.moveX(-d);
+		glutPostRedisplay();
 
-	GLfloat light_position[] = { 0.0f, 10.0f, 0.0f, 1.0f };
-	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+		break;
+	case 'q':
+		camera.moveZ(d);
+		glutPostRedisplay();
+		break;
+	case 'e':
+		camera.moveZ(-d);
+		glutPostRedisplay();
+		break;
 
-	glutPostRedisplay();	//Re-draw scene 
-}
-
-//=======================================================================
-// Mouse Function
-//=======================================================================
-void myMouse(int button, int state, int x, int y)
-{
-	y = HEIGHT - y;
-
-	if (state == GLUT_DOWN)
-	{
-		cameraZoom = y;
-	}
-}
-
-//=======================================================================
-// Reshape Function
-//=======================================================================
-void myReshape(int w, int h)
-{
-	if (h == 0) {
-		h = 1;
+	case GLUT_KEY_ESCAPE:
+		exit(EXIT_SUCCESS);
 	}
 
-	WIDTH = w;
-	HEIGHT = h;
+}
+void Special(int key, int x, int y) {
 
-	// set the drawable region of the window
-	glViewport(0, 0, w, h);
+	if (!game_start) {
+		if (key == GLUT_KEY_DOWN) {
+			if (arrowX == WidthX / 2 - 360 && arrowY == HeightY / 2 + 100) {
+				arrowY = HeightY / 2 + 50;
+			}
+			else if (arrowX == WidthX / 2 - 360 && arrowY == HeightY / 2 + 50) {
+				arrowY = HeightY / 2;
+			}
+			else if (arrowX == WidthX / 2 - 360 && arrowY == HeightY / 2) {
+				arrowY = HeightY / 2 + 100;
+			}
+			glutPostRedisplay();
 
-	// set up the projection matrix 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(fovy, (GLdouble)WIDTH / (GLdouble)HEIGHT, zNear, zFar);
+		}
+		if (key == GLUT_KEY_RIGHT) {
+			if (level == 0) {
+				printf("game start", 0);
+			}
+			else if (level == 1) {
+				printf("game start", 1);
+			}
+			else if (level == 2) {
+				printf("game start", 2);
+			}
+			game_start = true;
+			init();
 
-	// go back to modelview matrix so we can move the objects about
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluLookAt(Eye.x, Eye.y, Eye.z, At.x, At.y, At.z, Up.x, Up.y, Up.z);
+			setupLights();
+			setupCamera();
+
+			ball = Ball();
+			ball.radius = 1;
+
+			n = (level + 1) * 3;
+			Maze m = Maze(n, 0, n*n - 1);
+			maze = m.map;
+			glutIdleFunc(NULL); //stopping the AnimFunction after beginning the game
+
+			glutPostRedisplay();
+
+		}
+	}
+	else {
+		float a = 1.0;
+
+		switch (key) {
+		case GLUT_KEY_UP:
+			camera.rotateX(a);
+			glutPostRedisplay();
+			break;
+		case GLUT_KEY_DOWN:
+			camera.rotateX(-a);
+			glutPostRedisplay();
+			break;
+		case GLUT_KEY_LEFT:
+			camera.rotateY(a);
+			glutPostRedisplay();
+			break;
+		case GLUT_KEY_RIGHT:
+			camera.rotateY(-a);
+			glutPostRedisplay();
+			break;
+		}
+	}
+
 }
 
-//=======================================================================
-// Assets Loading Function
-//=======================================================================
-void LoadAssets()
-{
-	// Loading Model files
-	model_house.Load("Models/house/house.3ds");
-	model_tree.Load("Models/tree/Tree1.3ds");
-
-	// Loading texture files
-	tex_ground.Load("Textures/ground.bmp");
-	loadBMP(&tex, "Textures/sky4-jpg.bmp", true);
-}
-
-//=======================================================================
-// Main Function
-//=======================================================================
-void main(int argc, char** argv)
-{
+void main(int argc, char **argv) {
 	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
+	glutCreateWindow("The Maze: Clausa");
+	glutDisplayFunc(display);
+	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glEnable(GL_TEXTURE_2D);
+	loadBMP(&texID, "textures/dpic.bmp", false); //welcome screen
 
-	glutInitWindowSize(WIDTH, HEIGHT);
+	gluOrtho2D(0.0, WidthX, 0.0, HeightY);
 
-	glutInitWindowPosition(100, 150);
+	glutKeyboardFunc(Keyboard);
+	glutSpecialFunc(Special);
+	glutIdleFunc(Anim_Move);
 
-	glutCreateWindow(title);
-
-	glutDisplayFunc(myDisplay);
-
-	glutKeyboardFunc(myKeyboard);
-
-	glutMotionFunc(myMotion);
-
-	glutMouseFunc(myMouse);
-
-	glutReshapeFunc(myReshape);
-
-	myInit();
-
-	LoadAssets();
-		glEnable(GL_DEPTH_TEST);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glEnable(GL_NORMALIZE);
-	glEnable(GL_COLOR_MATERIAL);
-
-	glShadeModel(GL_SMOOTH);
-
+	glutFullScreen();
 	glutMainLoop();
 }
