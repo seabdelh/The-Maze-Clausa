@@ -87,6 +87,8 @@
     <ClCompile Include="Maze.cpp" />
     <ClCompile Include="Model_3DS.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Ball.cpp" />
+    <ClCompile Include="The Maze.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GLTexture.h" />
