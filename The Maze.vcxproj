@@ -85,6 +85,7 @@
   <ItemGroup>
     <ClCompile Include="GLTexture.cpp" />
     <ClCompile Include="Model_3DS.cpp" />
+    <ClCompile Include="Ball.cpp" />
     <ClCompile Include="The Maze.cpp" />
   </ItemGroup>
   <ItemGroup>
