@@ -116,7 +116,7 @@ public:
 };
 
 Camera camera;
-/*
+
 void setupCamera() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -148,7 +148,7 @@ void setupLights() {
 	GLfloat material_shininess[] = { 96.0f };
 	glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
 
-}*/
+}
 void init()
 {
 	//3D stuff 
