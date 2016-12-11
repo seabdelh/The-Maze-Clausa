@@ -106,6 +106,14 @@ void drawMazeGround(int n ){
 //new Collision methods 
 
 void createCollisionMapRange (bool ** generatedReaMazeWall , int n  ) {
+	//re set all vectors to bot have an error 
+	 mazeCollisionMapZLessThan.clear();
+		 mazeCollisionMapZMoreThan.clear();
+		 mazeCollisionMapXLessThan.clear();
+		 mazeCollisionMapXMoreThan.clear();
+		 mazeCollisionMapcollisionCell.clear();
+		 mazeCollisionMapcoliisionCellSide.clear();
+	//end of reset
 
 	createNbyNGrid ( n );
 	destroySomeWalls (   generatedReaMazeWall  , n) ;
@@ -217,6 +225,9 @@ bool amICollide  (float z , float x , float radius ){
 			
 
 }
+
+	collisionCell = -1;
+	coliisionCellSide = -1;
 	return false ;
 }
 
