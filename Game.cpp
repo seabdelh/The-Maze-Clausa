@@ -28,7 +28,7 @@ GLuint texID2;
 double ratio = WidthX / HeightY;
 //maze 
 bool ** maze;
-int n = 3;
+int n = -1;
 double camera_rot_ang = 360;
 
 
@@ -135,19 +135,41 @@ void setupCamera() {
 	camera.look();
 }
 
+void to_game_over() {
+	//3D stuff 
+	glDisable(GL_LIGHTING);
+	glDisable(GL_LIGHT0);
+	glDisable(GL_COLOR_MATERIAL);
+	glShadeModel(NULL);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_NORMALIZE);
+
+	glMatrixMode(GL_MODELVIEW);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(0.0, WidthX, 0.0, HeightY);
+	glMatrixMode(GL_MODELVIEW);
+
+	glPushMatrix();
+	glLoadIdentity();
+
+}
 
 void timer(int k) {
 
-	if (camera_rot_ang != 0) {
-		camera_rot_ang -= 1;
+	if (game_start && !game_over) {
+		if (camera_rot_ang != 0) {
+			camera_rot_ang -= 1;
+		}
+		else {
+			ball.moveBall();
+			game_over = amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius);
+			if (game_over)
+				to_game_over();
+		}
+		glutPostRedisplay();
+		glutTimerFunc(10, timer, ++k);
 	}
-	else {
-		ball.moveBall();
-		game_over = amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius);
-	}
-	glutPostRedisplay();
-	glutTimerFunc(10, timer, ++k);
-
 }
 
 void setupLights() {
@@ -172,6 +194,7 @@ void setupLights() {
 	glMaterialfv(GL_FRONT, GL_SHININESS, material_shininess);
 
 }
+
 void init()
 {
 	//3D stuff 
@@ -184,6 +207,7 @@ void init()
 	setupLights();
 
 	game_start = true;
+	isGridCreatedBefore = false;
 	ball = Ball();
 	ball.radius = 1;
 	n = (level + 1) * 3;
@@ -335,7 +359,6 @@ void display(void) {
 
 	}
 	else {
-
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		if (game_over == true) {  //////game over Part
 			glClear(GL_COLOR_BUFFER_BIT);
@@ -345,7 +368,6 @@ void display(void) {
 			printString(WidthX / 2 - 300, HeightY / 2 + 50, 0, 1, 0, 0, " Your Score : " + parse(level));
 		}
 		else {
-
 			setupCamera();
 			glBindTexture(GL_TEXTURE_2D, NULL); //no texture by default: if you want to use it activate it then disable it again  
 
@@ -405,10 +427,12 @@ void Anim_Move() {
 void Keyboard(unsigned char key, int x, int y) {
 	float d = 1;
 	if (key == 'z') {
-		game_over = true;
-	}
-	else game_over = false;
+		game_over = false;
+		game_start = false;
+		glutIdleFunc(Anim_Move); //enabling the AnimFunction again
+		glutPostRedisplay();
 
+	}
 	switch (key) {
 	case 'w':
 		camera.moveY(d);
@@ -457,7 +481,6 @@ void Special(int key, int x, int y) {
 				arrowY = HeightY / 2 + 100;
 			}
 			glutPostRedisplay();
-
 		}
 		if (key == GLUT_KEY_RIGHT) {
 			if (level == 0) {
