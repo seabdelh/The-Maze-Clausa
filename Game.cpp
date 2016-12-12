@@ -143,6 +143,7 @@ void timer(int k) {
 	}
 	else {
 		ball.moveBall();
+		game_over = amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius);
 	}
 	glutPostRedisplay();
 	glutTimerFunc(10, timer, ++k);
@@ -358,7 +359,7 @@ void display(void) {
 			drawStar(n*wallLength - 0.5*wallLength, 0.5*0.2*wallLength, n*wallLength - 0.5*wallLength);
 			//createMazeSingleWall (0,0,0, true  ) ;
 			//createMazeSingleWall (0,0,0, false  ) ;
-			ball.drawBall(wallLength / 2, wallLength, wallLength / 2); //this line draw the ball at <x,y,z> but when it does , the light goes
+			ball.drawBall(wallLength / 2, 0.5*0.2*wallLength, wallLength / 2); //this line draw the ball at <x,y,z> but when it does , the light goes
 			glPopMatrix();
 
 		}

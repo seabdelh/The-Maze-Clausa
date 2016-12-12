@@ -18,11 +18,6 @@ public:
 	GLdouble rotangle = 0;
 	//slow motion flag //true-->slow down translation and rotation 
 	BOOLEAN slowmotion = false;
-	//keyboard
-	BOOLEAN rightclicked = false;
-	BOOLEAN leftclicked = false;
-	//BOOLEAN upclicked = false;
-	BOOLEAN downclicked = false;
 	int state = 1;//1 forward; 2 right ; 3 left; 4 backward
 
 
