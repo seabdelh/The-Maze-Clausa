@@ -18,6 +18,7 @@
 #define DEG2RAD(a) (a * 0.0174532925)
 
 Model_3DS model_star; // hna el star
+
 Ball ball;
 double WidthX = glutGet(GLUT_SCREEN_WIDTH);
 double HeightY = glutGet(GLUT_SCREEN_HEIGHT);
@@ -29,6 +30,7 @@ double ratio = WidthX / HeightY;
 //maze 
 bool startBallMove = false;
 bool ** maze;
+
 int n = -1;
 double camera_current_ang = 0;
 int rotBY90 = 0;
@@ -207,7 +209,6 @@ void timer(int k) {
 		glutTimerFunc(10, timer, ++k);
 	}
 }
-
 void setupLights() {
 	//light config
 	GLfloat ambient[] = { 0.1f, 0.1f, 0.1, 1.0f };
@@ -334,6 +335,7 @@ void gameover() {//new nada p2
 	glTexCoord2f(0, 1.7);
 	glVertex3f(0, HeightY + 700, 0);
 	glEnd();
+	glBindTexture(GL_TEXTURE_2D, NULL);
 	glPopMatrix();
 
 	glColor3f(1, 1, 1);	// Set material back to white instead of grey used for the ground texture.
@@ -346,7 +348,6 @@ void welcomegame() { //new nada p2
 								   //  glColor3f(0.6, 0.6, 0.6);
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texID);
-	glBegin(GL_QUADS);
 	glBegin(GL_QUADS);
 	glNormal3f(0, 1, 0);
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(0, 0, 0);
@@ -449,7 +450,11 @@ void display(void) {
 void LoadAssets() { // nadaaaaa
 					// Loading Model files
 	model_star.Load("Models/Toy.3ds");
-	// Loading texture files
+   ball.tex_ball.Load("Textures/Ball.bmp");
+   texx.LoadBMP("Textures/wall final 4k.bmp");
+   texx2.LoadBMP("Textures/Wall.bmp");
+ //  createMazeSingleWall.load("Textures/wall.bmp");
+   
 }
 void Anim_Move() {
 	if (arrowX == WidthX / 2 - 360 && arrowY == HeightY / 2 + 100) {
