@@ -1,5 +1,4 @@
 #include <string>
-#include <time.h>
 
 #include "TextureBuilder.h"
 #include "Model_3DS.h"
@@ -35,6 +34,9 @@ int n = -1;
 double camera_current_ang = 0;
 int rotBY90 = 0;
 double game_status_time = 0;
+bool slow_motion_pressed = false;
+double slow_motion_activation_time = 10; //10 secs
+
 
 class Vector3f {
 public:
@@ -192,6 +194,14 @@ void timer(int k) {
 		else {
 			startBallMove = true;
 			game_status_time += 0.01;
+
+			if (slow_motion_activation_time <= 0) {
+				ball.slowmotion = false;
+			}
+			else {
+				slow_motion_activation_time -= 0.01;
+			}
+
 			if (rotBY90 > 0) {
 				camera_current_ang += 1;
 				rotBY90--;
@@ -248,6 +258,7 @@ void init()
 	game_status_time = 0;
 	rotBY90 = 0;
 	camera_current_ang = 0;
+	slow_motion_pressed = false;
 
 	ball = Ball();
 	ball.radius = 1;
@@ -432,16 +443,25 @@ void display(void) {
 
 			printString(WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time:" + std::to_string(game_status_time));
 
-			if (game_status_time > 1) {
-				printString(2 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time Breaker: press (c)");
-			}
 			if (game_status_time > 2) {
-				printString(3 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: press (x)");
+				printString(4 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: press (x)");
+			}
 
+			if (game_status_time > 1) {
+				if (!slow_motion_pressed) {
+					printString(2 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time Breaker: press (c)");
+				}
+				else {
+					if (slow_motion_activation_time >= 0) {
+						printString(2 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time Breaker: (" + std::to_string(slow_motion_activation_time) + ")");
+					}
+					else {
+						printString(2 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time Breaker: (disabled)");
+					}
+				}
 			}
 
 			ready_for_3D();  //3D again
-
 		}
 	}
 	glFlush();
@@ -450,11 +470,11 @@ void display(void) {
 void LoadAssets() { // nadaaaaa
 					// Loading Model files
 	model_star.Load("Models/Toy.3ds");
-   ball.tex_ball.Load("Textures/Ball.bmp");
-   texx.LoadBMP("Textures/wall final 4k.bmp");
-   texx2.LoadBMP("Textures/Wall.bmp");
- //  createMazeSingleWall.load("Textures/wall.bmp");
-   
+	ball.tex_ball.Load("Textures/Ball.bmp");
+	texx.LoadBMP("Textures/wall final 4k.bmp");
+	texx2.LoadBMP("Textures/Wall.bmp");
+	//  createMazeSingleWall.load("Textures/wall.bmp");
+
 }
 void Anim_Move() {
 	if (arrowX == WidthX / 2 - 360 && arrowY == HeightY / 2 + 100) {
@@ -488,48 +508,47 @@ void Anim_Move() {
 
 void Keyboard(unsigned char key, int x, int y) {
 	float d = 1;
-
 	if (game_start && game_over) {
 		if (key == 'z') {
 			game_over = false;
 			game_start = false;
 			glutIdleFunc(Anim_Move); //enabling the AnimFunction again
 			glutPostRedisplay();
-
 		}
 	}
-
 	//for testing 
-	switch (key) {
-	case 'w':
-		camera.moveY(d);
-		glutPostRedisplay();
+	if (game_start && !game_over) {
+		switch (key) {
+		case 'w':
+			camera.moveY(d);
+			break;
+		case 's':
+			camera.moveY(-d);
+			break;
+		case 'a':
+			camera.moveX(d);
+			break;
+		case 'd':
+			camera.moveX(-d);
 
-		break;
-	case 's':
-		camera.moveY(-d);
-		glutPostRedisplay();
-
-		break;
-	case 'a':
-		camera.moveX(d);
-		glutPostRedisplay();
-		break;
-	case 'd':
-		camera.moveX(-d);
-		glutPostRedisplay();
-
-		break;
-	case 'q':
-		camera.moveZ(d);
-		glutPostRedisplay();
-		break;
-	case 'e':
-		camera.moveZ(-d);
-		glutPostRedisplay();
-		break;
-
-	case GLUT_KEY_ESCAPE:
+			break;
+		case 'q':
+			camera.moveZ(d);
+			glutPostRedisplay();
+			break;
+		case 'e':
+			camera.moveZ(-d);
+			break;
+		case 'c':
+			if (!slow_motion_pressed) {
+				ball.slowmotion = true;
+				slow_motion_pressed = true;
+				slow_motion_activation_time = 10;
+			}
+			break;
+		}
+	}
+	if (key == GLUT_KEY_ESCAPE) {
 		exit(EXIT_SUCCESS);
 	}
 
@@ -559,40 +578,35 @@ void Special(int key, int x, int y) {
 			else if (level == 2) {
 				printf("game start", 2);
 			}
-
 			init();
 			glutPostRedisplay();
-
 		}
 	}
 	else {
-		float a = 1.0;
-
-		switch (key)
-		{
-
-		case GLUT_KEY_LEFT:
-			//do something here
-			switch (ball.state)
+		if (rotBY90 == 0) {
+			switch (key)
 			{
-			case 1:ball.state = 3;  break;
-			case 2:ball.state = 4;  break;
-			case 3:ball.state = 2;  break;
-			case 4:ball.state = 1;  break;
+			case GLUT_KEY_LEFT:
+				switch (ball.state)
+				{
+				case 1:ball.state = 3;  break;
+				case 2:ball.state = 4;  break;
+				case 3:ball.state = 2;  break;
+				case 4:ball.state = 1;  break;
 
+				}
+				rotBY90 = -90; break;
+			case GLUT_KEY_RIGHT:
+				switch (ball.state)
+				{
+				case 1:ball.state = 4; break;
+				case 2:ball.state = 3; break;
+				case 3:ball.state = 1; break;
+				case 4:ball.state = 2; break;
+				}
+				rotBY90 = 90; break;
 			}
-			rotBY90 = -90; break;
-		case GLUT_KEY_RIGHT:
-			switch (ball.state)
-			{
-			case 1:ball.state = 4; break;
-			case 2:ball.state = 3; break;
-			case 3:ball.state = 1; break;
-			case 4:ball.state = 2; break;
-			}
-			rotBY90 = 90; break;
 		}
-
 	}
 }
 

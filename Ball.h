@@ -11,8 +11,8 @@ public:
 	//motion
 	GLdouble moveX = 0;
 	GLdouble moveZ = 0;
-	GLdouble movefactor = 0.03; //move in z axis by this factor
-	GLdouble rotfactor = 0.3;
+	GLdouble movefactor = 0.06; //move in z axis by this factor
+	GLdouble rotfactor = 1.5;
 	GLdouble rotaroundZ = 0;//1 or zero
 	GLdouble rotaroundX = 0;//1 or zero
 	GLdouble rotangle = 0;

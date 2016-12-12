@@ -52,7 +52,7 @@ void Ball::moveBall() { //glutidlefunc
 		}
 		else {
 			moveZ += movefactor / 2;
-			rotangle += rotangle / 2;
+			rotangle += rotfactor / 2;
 		}
 	}
 			break;
@@ -86,7 +86,6 @@ void Ball::moveBall() { //glutidlefunc
 			rotangle -= rotfactor / 2;
 
 		}
-
 	}
 			break;
 			//ball moving backward
