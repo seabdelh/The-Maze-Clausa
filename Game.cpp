@@ -34,9 +34,12 @@ int n = -1;
 double camera_current_ang = 0;
 int rotBY90 = 0;
 double game_status_time = 0;
+
 bool slow_motion_pressed = false;
 double slow_motion_activation_time = 10; //10 secs
 
+bool wall_breaker_pressed = false;
+double wall_breaker_activation_time = 10; //10 secs
 
 class Vector3f {
 public:
@@ -211,7 +214,25 @@ void timer(int k) {
 				rotBY90++;
 			}
 			ball.moveBall();
-			game_over = amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius);
+
+			//wall breaker power up
+			if (wall_breaker_pressed&&wall_breaker_activation_time >= 0) {
+				if (amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius)
+					&& coliisionCellSide != 1 && coliisionCellSide != 2 && !(collisionCell%n == 0 && coliisionCellSide == 3)
+					&& !(collisionCell < n && coliisionCellSide == 0)) {
+
+					maze[collisionCell][coliisionCellSide] = false;
+				}
+				else {
+					game_over = amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius);
+				}
+
+				wall_breaker_activation_time -= 0.01; //10 mili
+			}
+			else {
+				game_over = amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius);
+			}
+
 			if (game_over)
 				to_game_over();
 		}
@@ -259,6 +280,7 @@ void init()
 	rotBY90 = 0;
 	camera_current_ang = 0;
 	slow_motion_pressed = false;
+	wall_breaker_pressed = false;
 
 	ball = Ball();
 	ball.radius = 1;
@@ -443,11 +465,21 @@ void display(void) {
 
 			printString(WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time:" + std::to_string(game_status_time));
 
-			if (game_status_time > 2) {
-				printString(4 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: press (x)");
+			//wall breaker special power
+			if (game_status_time > 60) {
+				if (!wall_breaker_pressed) {
+					printString(4 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: press (x)");
+				}
+				else if (wall_breaker_activation_time >= 0) {
+					printString(4 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: (" + std::to_string(wall_breaker_activation_time) + ")");
+				}
+				else {
+					printString(4 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: (disabled)");
+				}
 			}
 
-			if (game_status_time > 1) {
+			//time breaker special power
+			if (game_status_time > 30) {
 				if (!slow_motion_pressed) {
 					printString(2 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time Breaker: press (c)");
 				}
@@ -544,6 +576,12 @@ void Keyboard(unsigned char key, int x, int y) {
 				ball.slowmotion = true;
 				slow_motion_pressed = true;
 				slow_motion_activation_time = 10;
+			}
+			break;
+		case 'x':
+			if (!wall_breaker_pressed) {
+				wall_breaker_pressed = true;
+				wall_breaker_activation_time = 10;
 			}
 			break;
 		}

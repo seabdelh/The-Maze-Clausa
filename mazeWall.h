@@ -272,7 +272,7 @@ bool amICollide  (float z , float x , float radius ){
 	printf(" dah l vector bta3y am i collide : %i \n",((mazeCollisionMapXMoreThan[iteratorCounter]) <= (x-radius*3/4) && (mazeCollisionMapXLessThan[iteratorCounter]) >= (x+radius*3/4) && mazeCollisionMapZMoreThan[iteratorCounter] <= z-radius*3/4 &&  mazeCollisionMapZLessThan[iteratorCounter] >= z+radius*3/4 )) ;
 	printf(" dah l vector bta3y l kora bt3ty  Z`<%f<Z`` && X`<%f<X`` \n",z+radius*(3/4),x+radius*(3/4) ) ;
 	*/
-	if((mazeCollisionMapXMoreThan[iteratorCounter]) <= (x-radius*(3/4)) && (mazeCollisionMapXLessThan[iteratorCounter]) >= (x+radius*(3/4)) && mazeCollisionMapZMoreThan[iteratorCounter] <= z-radius*(3/4) &&  mazeCollisionMapZLessThan[iteratorCounter] >= z+radius*(3/4) ){
+	if((mazeCollisionMapXMoreThan[iteratorCounter]) <= (x-radius*(0.1)) && (mazeCollisionMapXLessThan[iteratorCounter]) >= (x+radius*(0.1)) && mazeCollisionMapZMoreThan[iteratorCounter] <= z-radius*(0.1) &&  mazeCollisionMapZLessThan[iteratorCounter] >= z+radius*(0.1) ){
 		
 		collisionCell =  mazeCollisionMapcollisionCell[iteratorCounter];
 		coliisionCellSide =  mazeCollisionMapcoliisionCellSide[iteratorCounter];
