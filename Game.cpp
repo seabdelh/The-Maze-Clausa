@@ -2,6 +2,8 @@
 #include <time.h>
 
 #include "TextureBuilder.h"
+#include "Model_3DS.h"
+#include "GLTexture.h"
 #include "mazeWall.h"
 #include "glut.h" 
 #include <math.h>
@@ -15,17 +17,20 @@
 #define GLUT_KEY_ESCAPE 27
 #define DEG2RAD(a) (a * 0.0174532925)
 
+Model_3DS model_star; // hna el star
 Ball ball;
 double WidthX = glutGet(GLUT_SCREEN_WIDTH);
 double HeightY = glutGet(GLUT_SCREEN_HEIGHT);
-bool isEasy = false, isMedium = false, isHard = false, game_start = false;
+bool isEasy = false, isMedium = false, isHard = false, game_start = false, game_over = false;
 double arrowX = WidthX / 2 - 360, arrowY = HeightY / 2 + 100, level = 3; // level 3 means that this level does not exist 
 GLuint texID;
+GLuint texID2;
 double ratio = WidthX / HeightY;
 //maze 
 bool ** maze;
 int n = 3;
 double camera_rot_ang = 360;
+
 
 class Vector3f {
 public:
@@ -129,6 +134,7 @@ void setupCamera() {
 
 	camera.look();
 }
+
 
 void timer(int k) {
 
@@ -251,25 +257,62 @@ void drawArrow() {
 
 	glPopMatrix();
 }
+void gameover() {//new nada p2
 
+	glColor3f(0.6, 0.6, 0.6);	// Dim the ground texture a bit
+	glEnable(GL_TEXTURE_2D);	// Enable 2D texturing
+	glBindTexture(GL_TEXTURE_2D, texID2);	// Bind the ground texture
+
+	glPushMatrix();
+	glBegin(GL_QUADS);
+	glNormal3f(0, 1, 0);
+	glTexCoord2f(0, 0);
+	glVertex3f(0, 0, 0);
+	glTexCoord2f(1.7, 0);
+	glVertex3f(WidthX + 1200, 0, 0);
+	glTexCoord2f(1.7, 1.7);
+	glVertex3f(WidthX + 1200, HeightY + 700, 0);
+	glTexCoord2f(0, 1.7);
+	glVertex3f(0, HeightY + 700, 0);
+	glEnd();
+	glPopMatrix();
+
+	glColor3f(1, 1, 1);	// Set material back to white instead of grey used for the ground texture.
+} //new
+void welcomegame() { //new nada p2
+
+					 //glColor3f(0.6, 0.6, 0.6);
+	glPushMatrix();
+	glColor3f(0.0f, 0.20f, 0.10f); // green color
+								   //  glColor3f(0.6, 0.6, 0.6);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texID);
+	glBegin(GL_QUADS);
+	glBegin(GL_QUADS);
+	glNormal3f(0, 1, 0);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(0, 0, 0);
+	glTexCoord2f(1, 0.0f); glVertex3f(WidthX + 1200, 0, 0);
+	glTexCoord2f(1, 1); glVertex3f(WidthX + 1200, HeightY + 600, 0);
+	glTexCoord2f(0.0f, 1); glVertex3f(0, HeightY + 600, 0);
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, NULL);
+	glPopMatrix();
+	//glColor3f(1, 1, 1);
+}
+void drawStar(int x, int y, int z) { //nada p2
+	glPushMatrix();
+	glTranslatef(x, y, z);
+	glScalef(0.02, 0.02, 0.02);
+	model_star.Draw();
+	glPopMatrix();
+
+}
 
 void display(void) {
 
 	if (!game_start) {
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		glPushMatrix();
-		glColor3f(0.10f, 0.20f, 0.10f);
-		glBindTexture(GL_TEXTURE_2D, texID); //enabling the texture again  
-		glBegin(GL_QUADS);
-		glTexCoord2f(0.0f, 0.0f); glVertex3f(0, 0, 0);
-		glTexCoord2f(1, 0.0f); glVertex3f(WidthX + 100, 0, 0);
-		glTexCoord2f(1, 1); glVertex3f(WidthX + 600, HeightY, 0);
-		glTexCoord2f(0.0f, 1); glVertex3f(0, HeightY + 600, 0);
-		glEnd();
-		glBindTexture(GL_TEXTURE_2D, NULL);    //disabling the texture again  
-		glPopMatrix();
-
+		welcomegame();
 		std::string s = " Choose The Maze Mode :";
 		printString(WidthX / 2 - 360, HeightY / 2 + 100, 0, 1, 0, 0, s);
 		std::string t = " Easy ";
@@ -291,25 +334,41 @@ void display(void) {
 	else {
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		setupCamera();
-		glBindTexture(GL_TEXTURE_2D, NULL); //no texture by default: if you want to use it activate it then disable it again  
+		if (game_over == true) {  //////game over Part
+			glClear(GL_COLOR_BUFFER_BIT);
+			gameover();
+			std::string s2 = " GAME OVER";
+			printString(WidthX / 2 - 250, HeightY / 2 + 100, 0, 1, 0, 0, s2);
+			printString(WidthX / 2 - 300, HeightY / 2 + 50, 0, 1, 0, 0, " Your Score : " + parse(level));
+		}
+		else {
 
-		glPushMatrix();
-		glTranslated(0.5*n*wallLength, 0, 0.5*n*wallLength);
-		glRotated(camera_rot_ang, 0, 1, 0);
-		glTranslated(-0.5*n*wallLength,0,-0.5*n*wallLength);
-		drawCord();
-		// test of calls 		
-		drawMaze(maze, n);
-		//createMazeSingleWall (0,0,0, true  ) ;
-		//createMazeSingleWall (0,0,0, false  ) ;
-		ball.drawBall(wallLength / 2, wallLength, wallLength / 2); //this line draw the ball at <x,y,z> but when it does , the light goes
-		glPopMatrix();
+			setupCamera();
+			glBindTexture(GL_TEXTURE_2D, NULL); //no texture by default: if you want to use it activate it then disable it again  
+
+			glPushMatrix();
+			glTranslated(0.5*n*wallLength, 0, 0.5*n*wallLength);
+			glRotated(camera_rot_ang, 0, 1, 0);
+			glTranslated(-0.5*n*wallLength, 0, -0.5*n*wallLength);
+			drawCord();
+			// test of calls 		
+			drawMaze(maze, n);
+			drawStar(n*wallLength - 0.5*wallLength, 0.5*0.2*wallLength, n*wallLength - 0.5*wallLength);
+			//createMazeSingleWall (0,0,0, true  ) ;
+			//createMazeSingleWall (0,0,0, false  ) ;
+			ball.drawBall(wallLength / 2, wallLength, wallLength / 2); //this line draw the ball at <x,y,z> but when it does , the light goes
+			glPopMatrix();
+
+		}
 	}
 	glFlush();
 	glutSwapBuffers();
 }
-
+void LoadAssets() { // nadaaaaa
+					// Loading Model files
+	model_star.Load("Models/Toy.3ds");
+	// Loading texture files
+}
 void Anim_Move() {
 	if (arrowX == WidthX / 2 - 360 && arrowY == HeightY / 2 + 100) {
 		isEasy = true;
@@ -342,6 +401,10 @@ void Anim_Move() {
 
 void Keyboard(unsigned char key, int x, int y) {
 	float d = 1;
+	if (key == 'z') {
+		game_over = true;
+	}
+	else game_over = false;
 
 	switch (key) {
 	case 'w':
@@ -403,6 +466,7 @@ void Special(int key, int x, int y) {
 			else if (level == 2) {
 				printf("game start", 2);
 			}
+
 			init();
 			glutPostRedisplay();
 
@@ -441,7 +505,9 @@ void main(int argc, char **argv) {
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 
 	glEnable(GL_TEXTURE_2D);
-	loadBMP(&texID, "textures/dpic.bmp", false); //welcome screen
+	LoadAssets();
+	loadBMP(&texID, "textures/dpic.bmp", false); //welcome game
+	loadBMP(&texID2, "textures/max (3).bmp", false);//game over
 
 	gluOrtho2D(0.0, WidthX, 0.0, HeightY);
 
