@@ -27,10 +27,12 @@ GLuint texID;
 GLuint texID2;
 double ratio = WidthX / HeightY;
 //maze 
+bool startBallMove = false;
 bool ** maze;
 int n = -1;
-double camera_rot_ang = 360;
-
+double camera_current_ang = 0;
+int rotBY90 = 0;
+double game_status_time = 0;
 
 class Vector3f {
 public:
@@ -135,6 +137,38 @@ void setupCamera() {
 	camera.look();
 }
 
+void printString(double x, double y, double z, double r, double g, double b, std::string s) {
+
+	glColor3f(r, g, b);
+	glRasterPos3f(x, y, z);
+
+	for (unsigned int i = 0; i < s.length(); i++)
+		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, s[i]);
+
+}
+
+void ready_for_2D()
+{
+	glDisable(GL_DEPTH_TEST);
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glOrtho(0, WidthX, 0, HeightY, -5, 1);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+}
+
+
+void ready_for_3D()
+{
+
+	//to switch back to 3D after printing
+	glEnable(GL_DEPTH_TEST);
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+}
+
 void to_game_over() {
 	//3D stuff 
 	glDisable(GL_LIGHTING);
@@ -143,25 +177,27 @@ void to_game_over() {
 	glShadeModel(NULL);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_NORMALIZE);
-
-	glMatrixMode(GL_MODELVIEW);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0.0, WidthX, 0.0, HeightY);
-	glMatrixMode(GL_MODELVIEW);
-
-	glPushMatrix();
-	glLoadIdentity();
-
+	ready_for_2D();
 }
 
 void timer(int k) {
 
 	if (game_start && !game_over) {
-		if (camera_rot_ang != 0) {
-			camera_rot_ang -= 1;
+		if (camera_current_ang < 360 && !startBallMove) {
+			if (camera_current_ang < 360)
+				camera_current_ang += 1;
 		}
 		else {
+			startBallMove = true;
+			game_status_time += 0.01;
+			if (rotBY90 > 0) {
+				camera_current_ang += 1;
+				rotBY90--;
+			}
+			else if (rotBY90 < 0) {
+				camera_current_ang += -1;
+				rotBY90++;
+			}
 			ball.moveBall();
 			game_over = amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius);
 			if (game_over)
@@ -208,6 +244,10 @@ void init()
 
 	game_start = true;
 	isGridCreatedBefore = false;
+	game_status_time = 0;
+	rotBY90 = 0;
+	camera_current_ang = 0;
+
 	ball = Ball();
 	ball.radius = 1;
 	n = (level + 1) * 3;
@@ -246,15 +286,7 @@ std::string parse(int x) {
 	buffer << x;
 	return buffer.str();
 }
-void printString(double x, double y, double z, double r, double g, double b, std::string s) {
 
-	glColor3f(r, g, b);
-	glRasterPos3f(x, y, z);
-
-	for (unsigned int i = 0; i < s.length(); i++)
-		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, s[i]);
-
-}
 void drawArrow() {
 	glPushMatrix();
 	glTranslated(arrowX, arrowY, 0);
@@ -365,7 +397,7 @@ void display(void) {
 			gameover();
 			std::string s2 = " GAME OVER";
 			printString(WidthX / 2 - 250, HeightY / 2 + 100, 0, 1, 0, 0, s2);
-			printString(WidthX / 2 - 300, HeightY / 2 + 50, 0, 1, 0, 0, " Your Score : " + parse(level));
+			printString(WidthX / 2 - 300, HeightY / 2 + 50, 0, 1, 0, 0, " Your Time : " + std::to_string(game_status_time));
 		}
 		else {
 			setupCamera();
@@ -373,7 +405,7 @@ void display(void) {
 
 			glPushMatrix();
 			glTranslated(0.5*n*wallLength, 0, 0.5*n*wallLength);
-			glRotated(camera_rot_ang, 0, 1, 0);
+			glRotated(camera_current_ang, 0, 1, 0);
 			glTranslated(-0.5*n*wallLength, 0, -0.5*n*wallLength);
 			drawCord();
 			// test of calls 		
@@ -383,6 +415,31 @@ void display(void) {
 			//createMazeSingleWall (0,0,0, false  ) ;
 			ball.drawBall(wallLength / 2, 0.5*0.2*wallLength, wallLength / 2); //this line draw the ball at <x,y,z> but when it does , the light goes
 			glPopMatrix();
+
+			//game status
+			ready_for_2D(); //2D
+
+			glPushMatrix();
+			glColor3f(1, 1, 1);
+			glBegin(GL_POLYGON);
+			glVertex3f(5, HeightY, 0.0);
+			glVertex3f(WidthX, HeightY, 0.0);
+			glVertex3f(WidthX, HeightY - 40, 0.0);
+			glVertex3f(5, HeightY - 40, 0.0);
+			glEnd();
+			glPopMatrix();
+
+			printString(WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time:" + std::to_string(game_status_time));
+
+			if (game_status_time > 1) {
+				printString(2 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time Breaker: press (c)");
+			}
+			if (game_status_time > 2) {
+				printString(3 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: press (x)");
+
+			}
+
+			ready_for_3D();  //3D again
 
 		}
 	}
@@ -426,13 +483,18 @@ void Anim_Move() {
 
 void Keyboard(unsigned char key, int x, int y) {
 	float d = 1;
-	if (key == 'z') {
-		game_over = false;
-		game_start = false;
-		glutIdleFunc(Anim_Move); //enabling the AnimFunction again
-		glutPostRedisplay();
 
+	if (game_start && game_over) {
+		if (key == 'z') {
+			game_over = false;
+			game_start = false;
+			glutIdleFunc(Anim_Move); //enabling the AnimFunction again
+			glutPostRedisplay();
+
+		}
 	}
+
+	//for testing 
 	switch (key) {
 	case 'w':
 		camera.moveY(d);
@@ -508,33 +570,25 @@ void Special(int key, int x, int y) {
 			//do something here
 			switch (ball.state)
 			{
-			case 1:ball.state = 3; break;
-			case 2:ball.state = 4; break;
-			case 3:ball.state = 2; break;
-			case 4:ball.state = 1; break;
+			case 1:ball.state = 3;  break;
+			case 2:ball.state = 4;  break;
+			case 3:ball.state = 2;  break;
+			case 4:ball.state = 1;  break;
 
-			default:
-				break;
 			}
-			break;
-			break;
+			rotBY90 = -90; break;
 		case GLUT_KEY_RIGHT:
-
 			switch (ball.state)
 			{
 			case 1:ball.state = 4; break;
 			case 2:ball.state = 3; break;
 			case 3:ball.state = 1; break;
 			case 4:ball.state = 2; break;
-
-			default:
-				break;
 			}
-			break;
-			break;
+			rotBY90 = 90; break;
 		}
-	}
 
+	}
 }
 
 void main(int argc, char **argv) {
