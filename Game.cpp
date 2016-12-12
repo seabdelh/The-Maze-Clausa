@@ -25,8 +25,7 @@ double ratio = WidthX / HeightY;
 //maze 
 bool ** maze;
 int n = 3;
-
-
+double camera_rot_ang = 360;
 
 class Vector3f {
 public:
@@ -67,7 +66,9 @@ class Camera {
 public:
 	Vector3f eye, center, up;
 
-	Camera(float eyeX = -20.0f, float eyeY = 25.0f, float eyeZ = 20, float centerX = 20, float centerY = 0.0f, float centerZ = 20, float upX = 0.0f, float upY = 1.0f, float upZ = 0.0f) {
+	Camera() {  }//never used but force
+
+	Camera(float eyeX, float eyeY, float eyeZ, float centerX, float centerY, float centerZ, float upX, float upY, float upZ) {
 		eye = Vector3f(eyeX, eyeY, eyeZ);
 		center = Vector3f(centerX, centerY, centerZ);
 		up = Vector3f(upX, upY, upZ);
@@ -118,13 +119,26 @@ public:
 Camera camera;
 
 void setupCamera() {
+
+	//camera stuff
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(90, 16 / 9, 0.001, 300);
-
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
 	camera.look();
+}
+
+void timer(int k) {
+
+	if (camera_rot_ang != 0) {
+		camera_rot_ang -= 1;
+	}
+
+	glutPostRedisplay();
+	glutTimerFunc(10, timer, ++k);
+
 }
 
 void setupLights() {
@@ -157,7 +171,19 @@ void init()
 	glEnable(GL_COLOR_MATERIAL);
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_NORMALIZE);	
+	glEnable(GL_NORMALIZE);
+	setupLights();
+
+	game_start = true;
+	ball = Ball();
+	ball.radius = 1;
+	n = (level + 1) * 3;
+	Maze m = Maze(n, 0, n*n - 1);
+	maze = m.map;
+	glutIdleFunc(NULL); //stopping the AnimFunction after beginning the game
+	glutTimerFunc(0, timer, 0);
+	camera = Camera(0.5*n*wallLength, 3 * n / 4 * wallLength, -0.2*wallLength, 0.5*n*wallLength, 0, 0.5*n*wallLength, 0, 1, 0);
+
 }
 
 
@@ -228,7 +254,7 @@ void drawArrow() {
 
 
 void display(void) {
-	
+
 	if (!game_start) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -263,19 +289,22 @@ void display(void) {
 
 	}
 	else {
-	
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		setupCamera();
 		glBindTexture(GL_TEXTURE_2D, NULL); //no texture by default: if you want to use it activate it then disable it again  
 
+		glPushMatrix();
+		glTranslated(0.5*n*wallLength, 0, 0.5*n*wallLength);
+		glRotated(camera_rot_ang, 0, 1, 0);
+		glTranslated(-0.5*n*wallLength,0,-0.5*n*wallLength);
 		drawCord();
 		// test of calls 		
 		drawMaze(maze, n);
 		//createMazeSingleWall (0,0,0, true  ) ;
 		//createMazeSingleWall (0,0,0, false  ) ;
-
 		ball.drawBall(wallLength / 2, wallLength, wallLength / 2); //this line draw the ball at <x,y,z> but when it does , the light goes
-
+		glPopMatrix();
 	}
 	glFlush();
 	glutSwapBuffers();
@@ -374,20 +403,7 @@ void Special(int key, int x, int y) {
 			else if (level == 2) {
 				printf("game start", 2);
 			}
-			game_start = true;
 			init();
-
-			setupLights();
-			setupCamera();
-
-			ball = Ball();
-			ball.radius = 1;
-
-			n = (level + 1) * 3;
-			Maze m = Maze(n, 0, n*n - 1);
-			maze = m.map;
-			glutIdleFunc(NULL); //stopping the AnimFunction after beginning the game
-
 			glutPostRedisplay();
 
 		}
