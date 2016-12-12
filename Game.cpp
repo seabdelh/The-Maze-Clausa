@@ -10,7 +10,9 @@
 #include <sstream>
 #include "Maze.h"
 #include "Ball.h"
-
+#include <windows.h>
+#include <mmsystem.h>
+#pragma comment(lib,"winmm.lib")
 #pragma comment(lib, "legacy_stdio_definitions.lib")
 
 #define GLUT_KEY_ESCAPE 27
@@ -29,7 +31,6 @@ double ratio = WidthX / HeightY;
 //maze 
 bool startBallMove = false;
 bool ** maze;
-
 int n = -1;
 double camera_current_ang = 0;
 int rotBY90 = 0;
@@ -40,6 +41,9 @@ double slow_motion_activation_time = 10; //10 secs
 
 bool wall_breaker_pressed = false;
 double wall_breaker_activation_time = 10; //10 secs
+
+bool sound_of_time_fast_not_run_before = true;
+
 
 class Vector3f {
 public:
@@ -200,6 +204,10 @@ void timer(int k) {
 
 			if (slow_motion_activation_time <= 0) {
 				ball.slowmotion = false;
+				if (sound_of_time_fast_not_run_before) {
+					PlaySound(TEXT("sound/time fast.wav"), NULL, SND_ASYNC);
+					sound_of_time_fast_not_run_before = false;
+				}
 			}
 			else {
 				slow_motion_activation_time -= 0.01;
@@ -222,6 +230,7 @@ void timer(int k) {
 					&& !(collisionCell < n && coliisionCellSide == 0)) {
 
 					maze[collisionCell][coliisionCellSide] = false;
+					PlaySound(TEXT("sound/wall breaking.wav"), NULL, SND_ASYNC);
 				}
 				else {
 					game_over = amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius);
@@ -281,6 +290,7 @@ void init()
 	camera_current_ang = 0;
 	slow_motion_pressed = false;
 	wall_breaker_pressed = false;
+	sound_of_time_fast_not_run_before = true;
 
 	ball = Ball();
 	ball.radius = 1;
@@ -466,7 +476,7 @@ void display(void) {
 			printString(WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time:" + std::to_string(game_status_time));
 
 			//wall breaker special power
-			if (game_status_time > 60) {
+			if (game_status_time > 2) {
 				if (!wall_breaker_pressed) {
 					printString(4 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: press (x)");
 				}
@@ -479,7 +489,7 @@ void display(void) {
 			}
 
 			//time breaker special power
-			if (game_status_time > 30) {
+			if (game_status_time > 1) {
 				if (!slow_motion_pressed) {
 					printString(2 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time Breaker: press (c)");
 				}
@@ -575,6 +585,7 @@ void Keyboard(unsigned char key, int x, int y) {
 			if (!slow_motion_pressed) {
 				ball.slowmotion = true;
 				slow_motion_pressed = true;
+				PlaySound(TEXT("sound/time slow.wav"), NULL, SND_ASYNC);
 				slow_motion_activation_time = 10;
 			}
 			break;
