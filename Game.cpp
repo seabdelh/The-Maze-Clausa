@@ -273,7 +273,7 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_NORMALIZE);
 	setupLights();
-
+	amIWinner = false;
 	game_start = true;
 	isGridCreatedBefore = false;
 	game_status_time = 0;

@@ -23,6 +23,7 @@ std::vector<int>  mazeCollisionMapcoliisionCellSide ;
 int iteratorCounter =0;
 int collisionCell = -1 ;
 int coliisionCellSide = -1 ;
+bool amIWinner = false ;
 
 
 
@@ -252,6 +253,16 @@ void createCollisionMapRange (bool ** generatedReaMazeWall , int n  ) {
 		  mazeCollisionMapcollisionCell.push_back(i);
 		 mazeCollisionMapcoliisionCellSide.push_back(2);
 	}
+	  // ba7ot l negma
+	  if(i ==n*n-1){
+		 mazeCollisionMapZLessThan.push_back(n*wallLength - 0.5*wallLength+wallLength*0.3);
+		 mazeCollisionMapZMoreThan.push_back(n*wallLength - 0.5*wallLength-wallLength*0.3);
+		 mazeCollisionMapXLessThan.push_back(n*wallLength - 0.5*wallLength +wallLength*0.3);
+		 mazeCollisionMapXMoreThan.push_back(n*wallLength - 0.5*wallLength - wallLength*0.3);
+		 mazeCollisionMapcollisionCell.push_back(-2);
+		 mazeCollisionMapcoliisionCellSide.push_back(-2);
+
+	  }
 	
 
 // printf("\n deh value l pointer l bool : %p \n",mazeWallMap[i][j] ) ;
@@ -276,6 +287,10 @@ bool amICollide  (float z , float x , float radius ){
 		
 		collisionCell =  mazeCollisionMapcollisionCell[iteratorCounter];
 		coliisionCellSide =  mazeCollisionMapcoliisionCellSide[iteratorCounter];
+		if(collisionCell == -2 && coliisionCellSide == -2 ){
+			amIWinner = true ;
+		}
+
 		//printf(" it collide at cell : %i &  side :%i  : %i \n \n \n \n" , collisionCell, coliisionCellSide);
 		return true ;
 	}
