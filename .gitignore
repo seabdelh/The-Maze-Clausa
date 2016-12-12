@@ -4,3 +4,7 @@
 The Maze.sdf
 **/.DS_Store
 **.log
+*.db
+*.db
+*.opendb
+The Maze.VC.db
