@@ -141,7 +141,9 @@ void timer(int k) {
 	if (camera_rot_ang != 0) {
 		camera_rot_ang -= 1;
 	}
-
+	else {
+		ball.moveBall();
+	}
 	glutPostRedisplay();
 	glutTimerFunc(10, timer, ++k);
 
@@ -475,22 +477,36 @@ void Special(int key, int x, int y) {
 	else {
 		float a = 1.0;
 
-		switch (key) {
-		case GLUT_KEY_UP:
-			camera.rotateX(a);
-			glutPostRedisplay();
-			break;
-		case GLUT_KEY_DOWN:
-			camera.rotateX(-a);
-			glutPostRedisplay();
-			break;
+		switch (key)
+		{
+
 		case GLUT_KEY_LEFT:
-			camera.rotateY(a);
-			glutPostRedisplay();
+			//do something here
+			switch (ball.state)
+			{
+			case 1:ball.state = 3; break;
+			case 2:ball.state = 4; break;
+			case 3:ball.state = 2; break;
+			case 4:ball.state = 1; break;
+
+			default:
+				break;
+			}
+			break;
 			break;
 		case GLUT_KEY_RIGHT:
-			camera.rotateY(-a);
-			glutPostRedisplay();
+
+			switch (ball.state)
+			{
+			case 1:ball.state = 4; break;
+			case 2:ball.state = 3; break;
+			case 3:ball.state = 1; break;
+			case 4:ball.state = 2; break;
+
+			default:
+				break;
+			}
+			break;
 			break;
 		}
 	}

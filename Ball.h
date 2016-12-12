@@ -8,9 +8,28 @@ public:
 	GLdouble radius;
 	GLUquadricObj *quadratic = nullptr;   // Storage For Our Quadratic Objects  										  //texture
 	GLTexture tex_ball;
+	//motion
+	GLdouble moveX = 0;
+	GLdouble moveZ = 0;
+	GLdouble movefactor = 0.03; //move in z axis by this factor
+	GLdouble rotfactor = 0.3;
+	GLdouble rotaroundZ = 0;//1 or zero
+	GLdouble rotaroundX = 0;//1 or zero
+	GLdouble rotangle = 0;
+	//slow motion flag //true-->slow down translation and rotation 
+	BOOLEAN slowmotion = false;
+	//keyboard
+	BOOLEAN rightclicked = false;
+	BOOLEAN leftclicked = false;
+	//BOOLEAN upclicked = false;
+	BOOLEAN downclicked = false;
+	int state = 1;//1 forward; 2 right ; 3 left; 4 backward
+
 
 public:
 	Ball();
 	void drawBall(GLdouble x, GLdouble y, GLdouble z);
-	void moveBall(GLdouble startX, GLdouble startY, GLdouble startZ, GLdouble endX, GLdouble endY, GLdouble endZ);
+	void moveBall();
+	void SpecialInput(int key, int x, int y);
+
 };
