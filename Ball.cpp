@@ -3,12 +3,10 @@
 
 Ball::Ball() {
 	quadratic = gluNewQuadric();         // Create A Pointer To The Quadric Object  
-	tex_ball.Load("Textures/sky4-jpg.bmp"); //change later /in load assets	
+	tex_ball.Load("Textures/Ball(1).bmp"); //change later /in load assets	
 
 	gluQuadricTexture(quadratic, GL_TRUE);      // Create Texture Coords  
 	gluQuadricNormals(quadratic, GLU_SMOOTH);   // Create Smooth Normals  
-
-
 
 }
 
