@@ -7,7 +7,13 @@
     <ClCompile Include="Model_3DS.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="The Maze.cpp">
+    <ClCompile Include="Maze.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Ball.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -16,6 +22,28 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Model_3DS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Maze.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mazeWall.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="glut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="glaux.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="glew.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="Ball.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -29,5 +57,8 @@
     <Filter Include="Source files">
       <UniqueIdentifier>{4a0609d8-b32f-4087-b856-e5a524baa911}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="The Maze.rc" />
   </ItemGroup>
 </Project>

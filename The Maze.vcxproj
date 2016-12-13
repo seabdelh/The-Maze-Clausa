@@ -84,12 +84,25 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GLTexture.cpp" />
+    <ClCompile Include="Maze.cpp" />
     <ClCompile Include="Model_3DS.cpp" />
-    <ClCompile Include="The Maze.cpp" />
+    <ClCompile Include="Ball.cpp" />
+    <ClCompile Include="Game.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="glaux.h" />
+    <ClInclude Include="glew.h" />
     <ClInclude Include="GLTexture.h" />
+    <ClInclude Include="glut.h" />
+    <ClInclude Include="Ball.h" />
+    <ClInclude Include="Maze.h" />
+    <ClInclude Include="mazeWall.h" />
     <ClInclude Include="Model_3DS.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="TextureBuilder.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="The Maze.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
