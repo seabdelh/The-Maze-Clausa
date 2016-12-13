@@ -13,6 +13,7 @@ bool isGridCreatedBefore = false ;
 bool ** mazeWallMap ; 
 GLTexture texx;
 GLTexture texx2;
+GLuint tex;
 //the new part of collision 
 std::vector<float>  mazeCollisionMapZLessThan ;
 std::vector<float>  mazeCollisionMapZMoreThan ;

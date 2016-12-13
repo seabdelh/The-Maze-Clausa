@@ -19,6 +19,7 @@
 #define DEG2RAD(a) (a * 0.0174532925)
 
 Model_3DS model_star; // hna el star
+double star_rot_ang = 0;
 
 Ball ball;
 double WidthX = glutGet(GLUT_SCREEN_WIDTH);
@@ -42,9 +43,10 @@ double slow_motion_activation_time = 10; //10 secs
 bool wall_breaker_pressed = false;
 double wall_breaker_activation_time = 10; //10 secs
 
+int bonus = 100;
+
 bool sound_of_time_fast_not_run_before = true;
-
-
+bool sound_of_sel_menu_not_run_before = true;
 class Vector3f {
 public:
 	float x, y, z;
@@ -227,10 +229,13 @@ void timer(int k) {
 			if (wall_breaker_pressed&&wall_breaker_activation_time >= 0) {
 				if (amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius)
 					&& coliisionCellSide != 1 && coliisionCellSide != 2 && !(collisionCell%n == 0 && coliisionCellSide == 3)
-					&& !(collisionCell < n && coliisionCellSide == 0)) {
+					&& !(collisionCell < n && coliisionCellSide == 0)
+					&& collisionCell != -2 && coliisionCellSide != -2) {
 
 					maze[collisionCell][coliisionCellSide] = false;
+					bonus -= 10;
 					PlaySound(TEXT("sound/wall breaking.wav"), NULL, SND_ASYNC);
+
 				}
 				else {
 					game_over = amICollide(ball.moveZ + wallLength / 2, ball.moveX + wallLength / 2, ball.radius);
@@ -245,6 +250,7 @@ void timer(int k) {
 			if (game_over)
 				to_game_over();
 		}
+		star_rot_ang++;
 		glutPostRedisplay();
 		glutTimerFunc(10, timer, ++k);
 	}
@@ -259,7 +265,7 @@ void setupLights() {
 	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
 	GLfloat light_position[] = { 0.5*n*wallLength, 10.0f, 0.5*n*wallLength, 1.0f };
 	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-	GLfloat lightIntensity[] = { 0.5, 0.5, 0.5, 1.0f };
+	GLfloat lightIntensity[] = { 0.7, 0.7, 0.7, 1.0f };
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightIntensity);
 
 	//material config
@@ -291,6 +297,10 @@ void init()
 	slow_motion_pressed = false;
 	wall_breaker_pressed = false;
 	sound_of_time_fast_not_run_before = true;
+	sound_of_sel_menu_not_run_before = true;
+
+	star_rot_ang = 0;
+	bonus = 100;
 
 	ball = Ball();
 	ball.radius = 1;
@@ -300,7 +310,6 @@ void init()
 	glutIdleFunc(NULL); //stopping the AnimFunction after beginning the game
 	glutTimerFunc(0, timer, 0);
 	camera = Camera(0.5*n*wallLength, 3 * n / 4 * wallLength, -0.2*wallLength, 0.5*n*wallLength, 0, 0.5*n*wallLength, 0, 1, 0);
-
 }
 
 
@@ -416,6 +425,10 @@ void display(void) {
 	if (!game_start) {
 		glClear(GL_COLOR_BUFFER_BIT);
 		welcomegame();
+		if (sound_of_sel_menu_not_run_before) {
+			sound_of_sel_menu_not_run_before = false;
+			PlaySound(TEXT("sound/selection menu.wav"), NULL, SND_ASYNC);
+		}
 		std::string s = " Choose The Maze Mode :";
 		printString(WidthX / 2 - 360, HeightY / 2 + 100, 0, 1, 0, 0, s);
 		std::string t = " Easy ";
@@ -439,9 +452,23 @@ void display(void) {
 		if (game_over == true) {  //////game over Part
 			glClear(GL_COLOR_BUFFER_BIT);
 			gameover();
-			std::string s2 = " GAME OVER";
-			printString(WidthX / 2 - 250, HeightY / 2 + 100, 0, 1, 0, 0, s2);
-			printString(WidthX / 2 - 300, HeightY / 2 + 50, 0, 1, 0, 0, " Your Time : " + std::to_string(game_status_time));
+			if (!amIWinner) {
+				PlaySound(TEXT("sound/defeat.wav"), NULL, SND_ASYNC);
+				std::string s2 = "    GAME OVER";
+				printString(WidthX / 2 - 70, HeightY / 2 + 100, 0, 1, 0, 0, s2);
+				printString(WidthX / 2 - 70, HeightY / 2 + 50, 0, 1, 0, 0, " Your Time : " + std::to_string(game_status_time));
+				printString(WidthX / 2 - 70, HeightY / 2, 0, 1, 0, 0, "    Your Score : " + std::to_string(0));
+
+			}
+			else {
+				PlaySound(TEXT("sound/ta da.wav"), NULL, SND_ASYNC);
+				std::string s2 = "    You Win!";
+				printString(WidthX / 2 - 70, HeightY / 2 + 100, 0, 0, 1, 0, s2);
+				printString(WidthX / 2 - 70, HeightY / 2 + 50, 0, 0, 1, 0, " Your Time : " + std::to_string(game_status_time));
+				int score = bonus < 0 ? (1000 - game_status_time) : bonus + (1000 - game_status_time);
+				printString(WidthX / 2 - 70, HeightY / 2, 0, 0, 1, 0, "    Your Score : " + std::to_string(score));
+
+			}
 		}
 		else {
 			setupCamera();
@@ -454,15 +481,38 @@ void display(void) {
 			drawCord();
 			// test of calls 		
 			drawMaze(maze, n);
+
+			glPushMatrix();
+			glTranslated((n*wallLength - 0.5*wallLength), (0.5*0.2*wallLength), (n*wallLength - 0.5*wallLength));
+			glRotated(star_rot_ang, 0, 1, 0);
+			glTranslated(-(n*wallLength - 0.5*wallLength), -(0.5*0.2*wallLength), -(n*wallLength - 0.5*wallLength));
 			drawStar(n*wallLength - 0.5*wallLength, 0.5*0.2*wallLength, n*wallLength - 0.5*wallLength);
+			glPopMatrix();
+
 			//createMazeSingleWall (0,0,0, true  ) ;
 			//createMazeSingleWall (0,0,0, false  ) ;
 			ball.drawBall(wallLength / 2, 0.5*0.2*wallLength, wallLength / 2); //this line draw the ball at <x,y,z> but when it does , the light goes
 			glPopMatrix();
 
+			//sky box
+			glPushMatrix();
+			GLUquadricObj * qobj;
+			qobj = gluNewQuadric();
+			glTranslated(0.5*n*wallLength, wallLength, 0.5*n*wallLength);
+			glRotated(-90, 0, 1, 0);
+			glRotated(-90, 0, 0, 1);
+			glRotated(90, 1, 0, 0);
+			glBindTexture(GL_TEXTURE_2D, tex);
+			gluQuadricTexture(qobj, true);
+			gluQuadricNormals(qobj, GL_SMOOTH);
+			gluSphere(qobj, 100, 100, 100);
+			gluDeleteQuadric(qobj);
+			glPopMatrix();
+			glBindTexture(GL_TEXTURE_2D, NULL);
+
+
 			//game status
 			ready_for_2D(); //2D
-
 			glPushMatrix();
 			glColor3f(1, 1, 1);
 			glBegin(GL_POLYGON);
@@ -473,35 +523,39 @@ void display(void) {
 			glEnd();
 			glPopMatrix();
 
-			printString(WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time:" + std::to_string(game_status_time));
-
-			//wall breaker special power
-			if (game_status_time > 2) {
-				if (!wall_breaker_pressed) {
-					printString(4 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: press (x)");
-				}
-				else if (wall_breaker_activation_time >= 0) {
-					printString(4 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: (" + std::to_string(wall_breaker_activation_time) + ")");
-				}
-				else {
-					printString(4 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: (disabled)");
-				}
-			}
+			printString(WidthX / 8, HeightY - 24, 0, 0, 0, 0, "Time:" + std::to_string(game_status_time));
 
 			//time breaker special power
 			if (game_status_time > 1) {
 				if (!slow_motion_pressed) {
-					printString(2 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time Breaker: press (c)");
+					printString(2 * WidthX / 8, HeightY - 24, 0, 0, 0, 1, "Time Breaker: press (c)");
 				}
 				else {
 					if (slow_motion_activation_time >= 0) {
-						printString(2 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time Breaker: (" + std::to_string(slow_motion_activation_time) + ")");
+						printString(2 * WidthX / 8, HeightY - 24, 0, 0, 1, 0, "Time Breaker: (" + std::to_string(slow_motion_activation_time) + ")");
 					}
 					else {
-						printString(2 * WidthX / 6, HeightY - 24, 0, 1, 0, 0, "Time Breaker: (disabled)");
+						printString(2 * WidthX / 8, HeightY - 24, 0, 1, 0, 0, "Time Breaker: (disabled)");
 					}
 				}
 			}
+
+			//wall breaker special power
+			if (game_status_time > 2) {
+				if (!wall_breaker_pressed) {
+					printString(4 * WidthX / 8, HeightY - 24, 0, 0, 0, 1, "Wall Breaker: press (x)");
+				}
+				else if (wall_breaker_activation_time >= 0) {
+					printString(4 * WidthX / 8, HeightY - 24, 0, 0, 1, 0, "Wall Breaker: (" + std::to_string(wall_breaker_activation_time) + ")");
+				}
+				else {
+					printString(4 * WidthX / 8, HeightY - 24, 0, 1, 0, 0, "Wall Breaker: (disabled)");
+				}
+			}
+			//bonus
+			printString(6 * WidthX / 8, HeightY - 24, 0, 0, 1, 0, "Bonus: " + std::to_string(bonus < 0 ? 0 : bonus));
+
+
 
 			ready_for_3D();  //3D again
 		}
@@ -515,6 +569,9 @@ void LoadAssets() { // nadaaaaa
 	ball.tex_ball.Load("Textures/Ball.bmp");
 	texx.LoadBMP("Textures/wall final 4k.bmp");
 	texx2.LoadBMP("Textures/Wall.bmp");
+
+	loadBMP(&tex, "Textures/sky4-jpg.bmp", true);
+
 	//  createMazeSingleWall.load("Textures/wall.bmp");
 
 }
@@ -555,6 +612,7 @@ void Keyboard(unsigned char key, int x, int y) {
 			game_over = false;
 			game_start = false;
 			glutIdleFunc(Anim_Move); //enabling the AnimFunction again
+			sound_of_sel_menu_not_run_before = true;
 			glutPostRedisplay();
 		}
 	}
@@ -583,6 +641,7 @@ void Keyboard(unsigned char key, int x, int y) {
 			break;
 		case 'c':
 			if (!slow_motion_pressed) {
+				bonus -= 10;
 				ball.slowmotion = true;
 				slow_motion_pressed = true;
 				PlaySound(TEXT("sound/time slow.wav"), NULL, SND_ASYNC);
