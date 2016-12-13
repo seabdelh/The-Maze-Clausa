@@ -204,17 +204,18 @@ void timer(int k) {
 			startBallMove = true;
 			game_status_time += 0.01;
 
-			if (slow_motion_activation_time <= 0) {
-				ball.slowmotion = false;
-				if (sound_of_time_fast_not_run_before) {
-					PlaySound(TEXT("sound/time fast.wav"), NULL, SND_ASYNC);
-					sound_of_time_fast_not_run_before = false;
+			if (slow_motion_pressed) {
+				if (slow_motion_activation_time <= 0) {
+					ball.slowmotion = false;
+					if (sound_of_time_fast_not_run_before) {
+						PlaySound(TEXT("sound/time fast.wav"), NULL, SND_ASYNC);
+						sound_of_time_fast_not_run_before = false;
+					}
+				}
+				else {
+					slow_motion_activation_time -= 0.01;
 				}
 			}
-			else {
-				slow_motion_activation_time -= 0.01;
-			}
-
 			if (rotBY90 > 0) {
 				camera_current_ang += 1;
 				rotBY90--;
@@ -526,7 +527,7 @@ void display(void) {
 			printString(WidthX / 8, HeightY - 24, 0, 0, 0, 0, "Time:" + std::to_string(game_status_time));
 
 			//time breaker special power
-			if (game_status_time > 1) {
+			if (game_status_time > 10) {
 				if (!slow_motion_pressed) {
 					printString(2 * WidthX / 8, HeightY - 24, 0, 0, 0, 1, "Time Breaker: press (c)");
 				}
@@ -541,7 +542,7 @@ void display(void) {
 			}
 
 			//wall breaker special power
-			if (game_status_time > 2) {
+			if (game_status_time > 20) {
 				if (!wall_breaker_pressed) {
 					printString(4 * WidthX / 8, HeightY - 24, 0, 0, 0, 1, "Wall Breaker: press (x)");
 				}
@@ -554,8 +555,6 @@ void display(void) {
 			}
 			//bonus
 			printString(6 * WidthX / 8, HeightY - 24, 0, 0, 1, 0, "Bonus: " + std::to_string(bonus < 0 ? 0 : bonus));
-
-
 
 			ready_for_3D();  //3D again
 		}
